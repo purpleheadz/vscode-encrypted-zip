@@ -255,7 +255,10 @@ async function createEncryptedZip(filePaths) {
 
 function deactivate() {}
 
+// テスト用に関数をエクスポート
 module.exports = {
   activate,
-  deactivate
+  deactivate,
+  generateRandomPassword,
+  createEncryptedZip
 };
