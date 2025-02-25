@@ -1,0 +1,66 @@
+{
+  "name": "vscode-encrypted-zip",
+  "displayName": "Encrypted ZIP Creator",
+  "description": "ファイルやフォルダを選択して暗号化ZIPファイルを作成",
+  "version": "0.1.0",
+  "engines": {
+    "vscode": "^1.60.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onCommand:vscode-encrypted-zip.createEncryptedZip",
+    "onCommand:vscode-encrypted-zip.createFromActiveFile",
+    "onCommand:vscode-encrypted-zip.createFromDragDrop"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "vscode-encrypted-zip.createEncryptedZip",
+        "title": "暗号化ZIPの作成"
+      },
+      {
+        "command": "vscode-encrypted-zip.createFromActiveFile",
+        "title": "現在のファイルを暗号化ZIP化"
+      },
+      {
+        "command": "vscode-encrypted-zip.createFromDragDrop",
+        "title": "ファイル選択して暗号化ZIP化"
+      }
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "vscode-encrypted-zip.createEncryptedZip",
+          "group": "navigation"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "vscode-encrypted-zip.createFromActiveFile",
+          "group": "navigation"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "vscode-encrypted-zip.createFromDragDrop"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "vscode-encrypted-zip.createFromDragDrop",
+        "key": "ctrl+alt+z",
+        "mac": "cmd+alt+z",
+        "when": "editorFocus || explorerViewletVisible"
+      }
+    ]
+  },
+  "dependencies": {
+    "archiver": "^5.3.1",
+    "archiver-zip-encrypted": "^1.0.11",
+    "crypto": "^1.0.1"
+  }
+}
