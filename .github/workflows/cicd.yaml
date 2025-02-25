@@ -1,0 +1,37 @@
+name: VSCode Extension CI/CD
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  release:
+    types: [ created ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '16.x'
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+
+  deploy:
+    if: success() && github.event_name == 'release'
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '16.x'
+      - run: npm ci
+      - run: npm run vsce:package
+      - name: Publish to Visual Studio Marketplace
+        run: npm run vsce:publish
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
