@@ -1,5 +1,26 @@
 # vscode-encrypted-zip README
 
+VSCodeからワンアクションで暗号化Zipファイルを作成、クリップボードに自動生成パスワードをコピーします。
+
+## インストール
+
+1. リポジトリからコードをclone
+2. 以下の手順を実行
+```
+cd vscode-encrypted-zip
+npm install
+npm run vsce:package
+```
+3. vscode-encrypted-zip-0.1.0.vsix が作成されるので右クリックから「Install Extension VSIX」を選択して拡張機能をインストール
+
+## 使い方
+
+1. VSCode Exploreペインで暗号化したいファイル or フォルダを右クリック
+2. 暗号化ZIPの作成をクリック
+3. パスワードが生成されクリップボードにコピーされる or 独自のパスワードを入力する
+4. ZIPファイルの保存先を選択
+
+
 ## Features
 
 Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
