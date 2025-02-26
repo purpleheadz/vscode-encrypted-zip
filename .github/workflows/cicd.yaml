@@ -16,6 +16,8 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: '16.x'
+      - run: apt-get install xvfb
+      - run: xvfb-run -a npm test
       - run: npm ci
       - run: npm run lint
       - run: npm test
