@@ -20,12 +20,11 @@ jobs:
         run: sudo apt-get install -y xvfb
       - name: Install npm packages
         run: npm install
-      - name: Run tests with xvfb
-        run: xvfb-run -a npm test
       - run: npm ci
       - run: npm run lint
-      - run: npm test
-
+      - name: Run tests with xvfb
+        run: xvfb-run -a npm test
+        
   deploy:
     if: success() && github.event_name == 'release'
     needs: build
