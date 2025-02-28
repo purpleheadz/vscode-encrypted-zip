@@ -1,84 +1,61 @@
-# vscode-encrypted-zip README
+# Encrypted ZIP Creator for VS Code
 
-VSCodeからワンアクションで暗号化Zipファイルを作成、クリップボードに自動生成パスワードをコピーします。
+Create encrypted ZIP files from VS Code with a single action. Automatically generates passwords and copies them to your clipboard for convenience.
 
-## インストール
+## Features
 
-1. リポジトリからコードをclone
-2. 以下の手順を実行
+- Create encrypted ZIP archives from files or folders with right-click
+- Auto-generate secure passwords and copy to clipboard
+- Option to use your own custom password
+- Context menu integration in Explorer and Editor
+- Keyboard shortcut support (Ctrl+Alt+Z / Cmd+Alt+Z)
+- Multiple ways to create encrypted archives:
+  - From Explorer context menu
+  - From active file
+  - From file picker dialog
+
+## Installation
+
+1. Clone the repository
+2. Run the following commands:
 ```
 cd vscode-encrypted-zip
 npm install
 npm run vsce:package
 ```
-3. vscode-encrypted-zip-0.1.0.vsix が作成されるので右クリックから「Install Extension VSIX」を選択して拡張機能をインストール
+3. Install the generated .vsix file via "Install Extension VSIX" option
 
-## 使い方
+## Usage
 
-1. VSCode Exploreペインで暗号化したいファイル or フォルダを右クリック
-2. 暗号化ZIPの作成をクリック
-3. パスワードが生成されクリップボードにコピーされる or 独自のパスワードを入力する
-4. ZIPファイルの保存先を選択
-
-
-## Features
-
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
-
-For example if there is an image subfolder under your extension project workspace:
-
-\!\[feature X\]\(images/feature-x.png\)
-
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
+1. Right-click on a file or folder in VS Code Explorer
+2. Select "暗号化ZIPの作成" (Create Encrypted ZIP)
+3. Choose to use auto-generated password (copied to clipboard) or enter your own
+4. Select destination for the ZIP file
 
 ## Requirements
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
+- VS Code 1.60.0 or higher
 
-## Extension Settings
+## Commands
 
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
+- `vscode-encrypted-zip.createEncryptedZip`: Create encrypted ZIP from Explorer
+- `vscode-encrypted-zip.createFromActiveFile`: Create encrypted ZIP from current file
+- `vscode-encrypted-zip.createFromDragDrop`: Create encrypted ZIP from file picker
 
-For example:
+## Development
 
-This extension contributes the following settings:
+### Build Commands
+- `npm run vsce:package` - Build VSIX extension package
+- `npm run vsce:publish` - Publish extension to marketplace
 
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
-
-## Known Issues
-
-Calling out known issues can help limit users opening duplicate issues against your extension.
+### Lint/Test Commands
+- `npm run lint` - Run ESLint on extension.js
+- `npm run test` - Run all tests
 
 ## Release Notes
 
-Users appreciate release notes as you update your extension.
-
-### 1.0.0
-
-Initial release of ...
-
-### 1.0.1
-
-Fixed issue #.
-
-### 1.1.0
-
-Added features X, Y, and Z.
-
----
-
-## Working with Markdown
-
-You can author your README using Visual Studio Code.  Here are some useful editor keyboard shortcuts:
-
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux)
-* Toggle preview (`Shift+Cmd+V` on macOS or `Shift+Ctrl+V` on Windows and Linux)
-* Press `Ctrl+Space` (Windows, Linux, macOS) to see a list of Markdown snippets
-
-## For more information
-
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
-
-**Enjoy!**
+### 0.1.0
+- Initial release
+- Support for creating encrypted ZIP files
+- Password generation and clipboard integration
+- Context menu and keyboard shortcut support
