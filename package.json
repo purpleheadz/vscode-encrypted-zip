@@ -3,6 +3,14 @@
   "displayName": "Encrypted ZIP Creator",
   "description": "ファイルやフォルダを選択して暗号化ZIPファイルを作成",
   "version": "0.2.0",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/purpleheadz/vscode-encrypted-zip.git"
+  },
+  "bugs": {
+    "url": "https://github.com/purpleheadz/vscode-encrypted-zip/issues"
+  },
   "engines": {
     "vscode": "^1.60.0"
   },
