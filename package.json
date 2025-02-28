@@ -34,7 +34,8 @@
       "explorer/context": [
         {
           "command": "vscode-encrypted-zip.createEncryptedZip",
-          "group": "navigation"
+          "group": "navigation",
+          "when": "explorerResourceIsFolder || explorerResourceIsRoot || explorerResourceSelected"
         }
       ],
       "editor/context": [

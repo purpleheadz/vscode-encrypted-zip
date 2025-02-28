@@ -18,14 +18,19 @@ function activate(context) {
   // エクスプローラービューからのファイル/フォルダ選択用コマンド
   let createFromExplorer = vscode.commands.registerCommand(
     'vscode-encrypted-zip.createEncryptedZip',
-    async (resource) => {
+    async (resource, selectedResources) => {
       let filePaths = [];
       
-      // コンテキストメニューから選択された場合
-      if (resource) {
+      // 複数選択されている場合 (selectedResources がある場合)
+      if (selectedResources && selectedResources.length > 0) {
+        filePaths = selectedResources.map(uri => uri.fsPath);
+      }
+      // 単一のリソースが選択された場合 (resource のみある場合)
+      else if (resource) {
         filePaths = [resource.fsPath];
-      } else {
-        // 選択されたファイルがない場合、エクスプローラーでの選択を取得
+      } 
+      // 選択されたファイルがない場合、ファイル選択ダイアログを表示
+      else {
         const uris = await vscode.window.showOpenDialog({
           canSelectMany: true,
           openLabel: '暗号化するファイル/フォルダを選択',
@@ -167,9 +172,22 @@ async function createEncryptedZip(filePaths) {
   }
 
   // 保存先の選択
-  const defaultFileName = path.basename(filePaths[0]);
+  let defaultFileName;
+  let defaultDir;
+  
+  if (filePaths.length === 1) {
+    // 単一ファイル/フォルダの場合はその名前を使用
+    defaultFileName = path.basename(filePaths[0]);
+    defaultDir = path.dirname(filePaths[0]);
+  } else {
+    // 複数ファイル/フォルダの場合は共通の親ディレクトリ名 + 日時を使用
+    defaultDir = path.dirname(filePaths[0]);
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').substring(0, 19);
+    defaultFileName = `archive_${timestamp}`;
+  }
+  
   const saveUri = await vscode.window.showSaveDialog({
-    defaultUri: vscode.Uri.file(path.join(path.dirname(filePaths[0]), `${defaultFileName}.zip`)),
+    defaultUri: vscode.Uri.file(path.join(defaultDir, `${defaultFileName}.zip`)),
     filters: {
       'ZIP files': ['zip']
     }
