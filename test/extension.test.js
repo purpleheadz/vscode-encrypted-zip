@@ -61,6 +61,21 @@ suite('Encrypted ZIP Extension Test Suite', () => {
 
   // パスワード生成関数のテスト - 数値パラメータ（レガシーモード）
   test('パスワード生成のテスト - 長さ指定', () => {
+    // VS Codeの設定をモック
+    const getConfigurationStub = sinon.stub(vscode.workspace, 'getConfiguration');
+    getConfigurationStub.returns({
+      get: sinon.stub().returns([
+        {
+          name: "標準 (大文字/小文字/数字/記号)",
+          uppercase: true, 
+          lowercase: true,
+          numbers: true,
+          specialChars: true,
+          length: 16
+        }
+      ])
+    });
+    
     const password = generateRandomPassword(16);
     
     // パスワードの長さが正しいことを確認
@@ -75,6 +90,12 @@ suite('Encrypted ZIP Extension Test Suite', () => {
   
   // パスワード生成関数のテスト - カスタムパターン
   test('パスワード生成のテスト - カスタムパターン', () => {
+    // VS Codeの設定をモック
+    const getConfigurationStub = sinon.stub(vscode.workspace, 'getConfiguration');
+    getConfigurationStub.returns({
+      get: sinon.stub().returns([])
+    });
+    
     // 数字のみのパスワードパターン
     const pattern = {
       uppercase: false,
@@ -95,9 +116,28 @@ suite('Encrypted ZIP Extension Test Suite', () => {
   
   // 複数ファイル選択時のデフォルトファイル名生成テスト
   test('複数ファイル選択時のデフォルトファイル名テスト', async () => {
+    // VS Codeの設定をモック
+    const getConfigurationStub = sinon.stub(vscode.workspace, 'getConfiguration');
+    getConfigurationStub.returns({
+      get: sinon.stub().returns([
+        {
+          name: "標準 (大文字/小文字/数字/記号)",
+          uppercase: true, 
+          lowercase: true,
+          numbers: true,
+          specialChars: true,
+          length: 16
+        }
+      ])
+    });
+    
     // VSCodeのAPIをスタブ化
     const showSaveDialogStub = sinon.stub(vscode.window, 'showSaveDialog').resolves(vscode.Uri.file('/tmp/test.zip'));
     const showInformationMessageStub = sinon.stub(vscode.window, 'showInformationMessage').resolves('このパスワードを使用');
+    const showQuickPickStub = sinon.stub(vscode.window, 'showQuickPick').resolves({ 
+      label: "標準 (大文字/小文字/数字/記号)",
+      index: 0
+    });
     
     // 進捗表示をスタブ化
     const withProgressStub = sinon.stub(vscode.window, 'withProgress').resolves();
@@ -164,9 +204,28 @@ suite('Encrypted ZIP Extension Test Suite', () => {
   
   // 単一ファイル選択時のデフォルトファイル名生成テスト
   test('単一ファイル選択時のデフォルトファイル名テスト', async () => {
+    // VS Codeの設定をモック
+    const getConfigurationStub = sinon.stub(vscode.workspace, 'getConfiguration');
+    getConfigurationStub.returns({
+      get: sinon.stub().returns([
+        {
+          name: "標準 (大文字/小文字/数字/記号)",
+          uppercase: true, 
+          lowercase: true,
+          numbers: true,
+          specialChars: true,
+          length: 16
+        }
+      ])
+    });
+    
     // VSCodeのAPIをスタブ化
     const showSaveDialogStub = sinon.stub(vscode.window, 'showSaveDialog').resolves(vscode.Uri.file('/tmp/test.zip'));
     const showInformationMessageStub = sinon.stub(vscode.window, 'showInformationMessage').resolves('このパスワードを使用');
+    const showQuickPickStub = sinon.stub(vscode.window, 'showQuickPick').resolves({ 
+      label: "標準 (大文字/小文字/数字/記号)",
+      index: 0
+    });
     
     // 進捗表示をスタブ化
     const withProgressStub = sinon.stub(vscode.window, 'withProgress').resolves();
@@ -231,6 +290,9 @@ suite('Encrypted ZIP Extension Test Suite', () => {
   
   // コンテキストメニューからの複数ファイル選択テスト - シンプルなバージョン
   test('コンテキストメニューからの複数ファイル選択テスト', function() {
+    // VS Codeの設定をモック - グローバル設定をリセット
+    sinon.restore();
+    
     // VSCodeの拡張機能コンテキストをモック
     const context = {
       subscriptions: []
@@ -244,9 +306,23 @@ suite('Encrypted ZIP Extension Test Suite', () => {
     const createEncryptedZipStub = sinon.stub().returns(Promise.resolve());
     originalModule.createEncryptedZip = createEncryptedZipStub;
     
-    // コマンド登録をモック
+    // コマンドとワークスペース設定をモック
     const registerCommandStub = sinon.stub(vscode.commands, 'registerCommand').returns({
       dispose: () => {}
+    });
+    
+    const getConfigurationStub = sinon.stub(vscode.workspace, 'getConfiguration');
+    getConfigurationStub.returns({
+      get: sinon.stub().returns([
+        {
+          name: "標準 (大文字/小文字/数字/記号)",
+          uppercase: true, 
+          lowercase: true,
+          numbers: true,
+          specialChars: true,
+          length: 16
+        }
+      ])
     });
     
     // 拡張機能をアクティブ化
@@ -254,6 +330,7 @@ suite('Encrypted ZIP Extension Test Suite', () => {
     
     // コマンドが登録されたことを確認
     sinon.assert.calledWith(registerCommandStub, 'vscode-encrypted-zip.createEncryptedZip');
+    sinon.assert.calledWith(registerCommandStub, 'vscode-encrypted-zip.configurePasswordPatterns');
     
     // 登録された関数を取得
     const handler = registerCommandStub.args.find(args => args[0] === 'vscode-encrypted-zip.createEncryptedZip')[1];
