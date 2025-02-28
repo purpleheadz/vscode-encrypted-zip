@@ -4,7 +4,8 @@
 [![GitHub issues](https://img.shields.io/github/issues/purpleheadz/vscode-encrypted-zip)](https://github.com/purpleheadz/vscode-encrypted-zip/issues)
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/purpleheadz/vscode-encrypted-zip)](https://github.com/purpleheadz/vscode-encrypted-zip/releases)
 [![GitHub stars](https://img.shields.io/github/stars/purpleheadz/vscode-encrypted-zip)](https://github.com/purpleheadz/vscode-encrypted-zip/stargazers)
-[![Build Status](https://img.shields.io/github/actions/workflow/status/purpleheadz/vscode-encrypted-zip/ci.yml?branch=main)](https://github.com/purpleheadz/vscode-encrypted-zip/actions)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/purpleheadz/vscode-encrypted-zip/cicd.yml?branch=main)](https://github.com/purpleheadz/vscode-encrypted-zip/actions)
+[![Architecture Documentation](https://img.shields.io/badge/docs-architecture-blue)](https://github.com/purpleheadz/vscode-encrypted-zip/blob/main/ARCHITECTURE.md)
 
 Create encrypted ZIP files from VS Code with a single action. Automatically generates passwords and copies them to your clipboard for convenience.
 This tool reduces the hassle of the infamous PPAP workflow.
@@ -58,6 +59,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - `vscode-encrypted-zip.configurePasswordPatterns`: Open password pattern settings
 
 ## Development
+
+### Project Structure
+For a detailed overview of the project architecture, see [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ### Build Commands
 - `npm run vsce:package` - Build VSIX extension package
