@@ -16,6 +16,46 @@
   ],
   "main": "./extension.js",
   "contributes": {
+    "configuration": {
+      "title": "Encrypted ZIP Creator",
+      "properties": {
+        "encryptedZip.passwordPatterns": {
+          "type": "array",
+          "default": [
+            {
+              "name": "標準 (大文字/小文字/数字/記号)",
+              "uppercase": true,
+              "lowercase": true,
+              "numbers": true,
+              "specialChars": true,
+              "length": 16
+            },
+            {
+              "name": "英数字のみ (大文字/小文字/数字)",
+              "uppercase": true,
+              "lowercase": true,
+              "numbers": true,
+              "specialChars": false,
+              "length": 16
+            },
+            {
+              "name": "数字のみ (6桁)",
+              "uppercase": false,
+              "lowercase": false,
+              "numbers": true,
+              "specialChars": false,
+              "length": 6
+            }
+          ],
+          "description": "パスワード生成のパターン設定です"
+        },
+        "encryptedZip.defaultPasswordPattern": {
+          "type": "number",
+          "default": 0,
+          "description": "デフォルトで使用するパスワードパターンのインデックス"
+        }
+      }
+    },
     "commands": [
       {
         "command": "vscode-encrypted-zip.createEncryptedZip",
@@ -28,6 +68,10 @@
       {
         "command": "vscode-encrypted-zip.createFromDragDrop",
         "title": "ファイル選択して暗号化ZIP化"
+      },
+      {
+        "command": "vscode-encrypted-zip.configurePasswordPatterns",
+        "title": "パスワードパターンの設定"
       }
     ],
     "menus": {

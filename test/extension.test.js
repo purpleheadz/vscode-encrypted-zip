@@ -59,8 +59,8 @@ suite('Encrypted ZIP Extension Test Suite', () => {
     }
   });
 
-  // パスワード生成関数のテスト
-  test('パスワード生成のテスト', () => {
+  // パスワード生成関数のテスト - 数値パラメータ（レガシーモード）
+  test('パスワード生成のテスト - 長さ指定', () => {
     const password = generateRandomPassword(16);
     
     // パスワードの長さが正しいことを確認
@@ -71,6 +71,26 @@ suite('Encrypted ZIP Extension Test Suite', () => {
     assert.ok(/[a-z]/.test(password), 'パスワードに小文字が含まれていない');
     assert.ok(/[0-9]/.test(password), 'パスワードに数字が含まれていない');
     assert.ok(/[!@#$%^&*()_\-+=<>?]/.test(password), 'パスワードに特殊文字が含まれていない');
+  });
+  
+  // パスワード生成関数のテスト - カスタムパターン
+  test('パスワード生成のテスト - カスタムパターン', () => {
+    // 数字のみのパスワードパターン
+    const pattern = {
+      uppercase: false,
+      lowercase: false,
+      numbers: true,
+      specialChars: false,
+      length: 8
+    };
+    
+    const password = generateRandomPassword(pattern);
+    
+    // パスワードの長さが正しいことを確認
+    assert.strictEqual(password.length, 8);
+    
+    // 数字のみが含まれていることを確認
+    assert.ok(/^[0-9]+$/.test(password), 'パスワードに数字以外の文字が含まれている');
   });
   
   // 複数ファイル選択時のデフォルトファイル名生成テスト

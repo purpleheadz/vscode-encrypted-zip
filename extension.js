@@ -86,34 +86,112 @@ function activate(context) {
     }
   );
 
+  // パスワードパターン設定コマンド
+  let configurePatterns = vscode.commands.registerCommand(
+    'vscode-encrypted-zip.configurePasswordPatterns',
+    async () => {
+      // 設定ファイルを開く
+      await vscode.commands.executeCommand(
+        'workbench.action.openSettings',
+        'encryptedZip.passwordPatterns'
+      );
+    }
+  );
+
   context.subscriptions.push(createFromExplorer);
   context.subscriptions.push(createFromEditor);
   context.subscriptions.push(createFromDragAndDrop);
+  context.subscriptions.push(configurePatterns);
 }
 
 /**
- * 強力なランダムパスワードを生成する
- * @param {number} length パスワードの長さ
+ * 設定されたパターンに基づいてランダムパスワードを生成する
+ * @param {number|object} patternOrLength パスワードパターン設定オブジェクトまたは長さ
  * @returns {string} 生成されたパスワード
  */
-function generateRandomPassword(length = 16) {
+function generateRandomPassword(patternOrLength = 16) {
+  // 設定からパターンリストを取得
+  const config = vscode.workspace.getConfiguration('encryptedZip');
+  const passwordPatterns = config.get('passwordPatterns', []);
+  
+  let pattern;
+  
+  // 引数が数値の場合は、レガシーモードとして長さのみを指定したパターンを作成
+  if (typeof patternOrLength === 'number') {
+    pattern = {
+      uppercase: true,
+      lowercase: true, 
+      numbers: true,
+      specialChars: true,
+      length: patternOrLength
+    };
+  } 
+  // オブジェクトの場合はそのまま使用
+  else if (typeof patternOrLength === 'object') {
+    pattern = patternOrLength;
+  }
+  // パターンインデックスの場合は、対応するパターンを使用
+  else if (typeof patternOrLength === 'string') {
+    const patternIndex = parseInt(patternOrLength, 10);
+    if (!isNaN(patternIndex) && patternIndex >= 0 && patternIndex < passwordPatterns.length) {
+      pattern = passwordPatterns[patternIndex];
+    } else {
+      // デフォルトのパターンインデックスを使用
+      const defaultIndex = config.get('defaultPasswordPattern', 0);
+      pattern = passwordPatterns[defaultIndex] || passwordPatterns[0] || {
+        uppercase: true,
+        lowercase: true,
+        numbers: true,
+        specialChars: true,
+        length: 16
+      };
+    }
+  }
+  
   const uppercaseChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
   const lowercaseChars = 'abcdefghijklmnopqrstuvwxyz';
   const numbers = '0123456789';
   const specialChars = '!@#$%^&*()_-+=<>?';
   
-  const allChars = uppercaseChars + lowercaseChars + numbers + specialChars;
-  let password = '';
+  // 使用する文字セットを決定
+  let availableChars = '';
+  let requiredChars = [];
   
-  // 各カテゴリから少なくとも1文字を確保
-  password += uppercaseChars.charAt(Math.floor(crypto.randomInt(uppercaseChars.length)));
-  password += lowercaseChars.charAt(Math.floor(crypto.randomInt(lowercaseChars.length)));
-  password += numbers.charAt(Math.floor(crypto.randomInt(numbers.length)));
-  password += specialChars.charAt(Math.floor(crypto.randomInt(specialChars.length)));
+  if (pattern.uppercase) {
+    availableChars += uppercaseChars;
+    requiredChars.push(uppercaseChars.charAt(Math.floor(crypto.randomInt(uppercaseChars.length))));
+  }
+  
+  if (pattern.lowercase) {
+    availableChars += lowercaseChars;
+    requiredChars.push(lowercaseChars.charAt(Math.floor(crypto.randomInt(lowercaseChars.length))));
+  }
+  
+  if (pattern.numbers) {
+    availableChars += numbers;
+    requiredChars.push(numbers.charAt(Math.floor(crypto.randomInt(numbers.length))));
+  }
+  
+  if (pattern.specialChars) {
+    availableChars += specialChars;
+    requiredChars.push(specialChars.charAt(Math.floor(crypto.randomInt(specialChars.length))));
+  }
+  
+  // 利用可能な文字がない場合は、安全のために数字のみのパスワードを生成
+  if (availableChars === '') {
+    availableChars = numbers;
+    requiredChars = [numbers.charAt(Math.floor(crypto.randomInt(numbers.length)))];
+  }
+  
+  // パスワードの長さが必須文字数より少ない場合は、少なくとも必須文字数にする
+  const actualLength = Math.max(pattern.length, requiredChars.length);
+  
+  // 必須文字を必ず含める
+  let password = requiredChars.join('');
   
   // 残りの文字をランダムに生成
-  for (let i = 4; i < length; i++) {
-    password += allChars.charAt(Math.floor(crypto.randomInt(allChars.length)));
+  for (let i = requiredChars.length; i < actualLength; i++) {
+    password += availableChars.charAt(Math.floor(crypto.randomInt(availableChars.length)));
   }
   
   // 文字列をシャッフル
@@ -133,23 +211,62 @@ async function copyToClipboard(text) {
  * @param {string[]} filePaths 圧縮するファイルパスの配列
  */
 async function createEncryptedZip(filePaths) {
-  // ランダムパスワードを生成
-  const password = generateRandomPassword(16);
+  // 設定からパターンリストを取得
+  const config = vscode.workspace.getConfiguration('encryptedZip');
+  const passwordPatterns = config.get('passwordPatterns', []);
   
-  // クリップボードにパスワードをコピー
-  await copyToClipboard(password);
+  // デフォルトのパターンがない場合は、標準のパターンを設定
+  if (passwordPatterns.length === 0) {
+    passwordPatterns.push({
+      name: "標準 (大文字/小文字/数字/記号)",
+      uppercase: true,
+      lowercase: true,
+      numbers: true,
+      specialChars: true,
+      length: 16
+    });
+  }
   
-  // ユーザーに自動生成されたパスワードを確認または変更する選択肢を提供
-  const options = ['このパスワードを使用', '自分でパスワードを入力', 'キャンセル'];
+  // パスワードパターンの選択肢を表示
+  const patternQuickPickItems = passwordPatterns.map((pattern, index) => ({
+    label: pattern.name,
+    description: `${pattern.length}文字`,
+    detail: getPatternDescription(pattern),
+    index: index
+  }));
   
-  const selection = await vscode.window.showInformationMessage(
-    `自動生成されたパスワード「${password}」がクリップボードにコピーされました。`, 
-    ...options
-  );
+  // ヘルパー関数: パターンの説明を生成
+  function getPatternDescription(pattern) {
+    const parts = [];
+    if (pattern.uppercase) parts.push("大文字");
+    if (pattern.lowercase) parts.push("小文字");
+    if (pattern.numbers) parts.push("数字");
+    if (pattern.specialChars) parts.push("記号");
+    return parts.join(", ") + "を含む";
+  }
   
-  let finalPassword = password;
+  // カスタムパスワード入力オプションを追加
+  patternQuickPickItems.push({
+    label: "自分でパスワードを入力",
+    description: "",
+    detail: "カスタムパスワードを手動で入力します",
+    index: -1
+  });
   
-  if (selection === '自分でパスワードを入力') {
+  const selectedPattern = await vscode.window.showQuickPick(patternQuickPickItems, {
+    placeHolder: 'パスワードのパターンを選択してください',
+    ignoreFocusOut: true
+  });
+  
+  if (!selectedPattern) {
+    vscode.window.showInformationMessage('暗号化ZIPの作成をキャンセルしました');
+    return;
+  }
+  
+  let finalPassword;
+  
+  // カスタムパスワード入力を選んだ場合
+  if (selectedPattern.index === -1) {
     // ユーザーがカスタムパスワードを入力する場合
     const customPassword = await vscode.window.showInputBox({
       prompt: 'ZIPファイルのパスワードを入力してください',
@@ -165,10 +282,29 @@ async function createEncryptedZip(filePaths) {
     }
     
     finalPassword = customPassword;
-  } else if (selection !== 'このパスワードを使用') {
-    // キャンセルまたは他の選択肢が選ばれた場合
-    vscode.window.showInformationMessage('暗号化ZIPの作成をキャンセルしました');
-    return;
+  } else {
+    // 選択されたパターンでパスワード生成
+    const pattern = passwordPatterns[selectedPattern.index];
+    const password = generateRandomPassword(pattern);
+    
+    // クリップボードにパスワードをコピー
+    await copyToClipboard(password);
+    
+    // ユーザーに確認のメッセージを表示
+    const options = ['このパスワードを使用', 'キャンセル'];
+    
+    const selection = await vscode.window.showInformationMessage(
+      `生成されたパスワード「${password}」がクリップボードにコピーされました。`,
+      ...options
+    );
+    
+    if (selection !== 'このパスワードを使用') {
+      // キャンセルまたは他の選択肢が選ばれた場合
+      vscode.window.showInformationMessage('暗号化ZIPの作成をキャンセルしました');
+      return;
+    }
+    
+    finalPassword = password;
   }
 
   // 保存先の選択
