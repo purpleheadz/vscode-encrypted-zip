@@ -19,18 +19,33 @@ function activate(context) {
   let createFromExplorer = vscode.commands.registerCommand(
     'vscode-encrypted-zip.createEncryptedZip',
     async (resource, selectedResources) => {
+      // デバッグ情報
+      console.log('コマンド実行: vscode-encrypted-zip.createEncryptedZip');
+      console.log('Resource:', resource);
+      console.log('Selected Resources:', selectedResources);
+      
+      // リソースがURI配列でない場合の対処
+      if (Array.isArray(resource) && !selectedResources) {
+        console.log('リソースが配列形式で渡されました - 互換性対応');
+        selectedResources = resource;
+        resource = selectedResources[0];
+      }
+      
       let filePaths = [];
       
       // 複数選択されている場合 (selectedResources がある場合)
       if (selectedResources && selectedResources.length > 0) {
+        console.log('複数選択処理');
         filePaths = selectedResources.map(uri => uri.fsPath);
       }
       // 単一のリソースが選択された場合 (resource のみある場合)
       else if (resource) {
+        console.log('単一選択処理');
         filePaths = [resource.fsPath];
       } 
       // 選択されたファイルがない場合、ファイル選択ダイアログを表示
       else {
+        console.log('選択なし - ファイル選択ダイアログを表示');
         const uris = await vscode.window.showOpenDialog({
           canSelectMany: true,
           openLabel: '暗号化するファイル/フォルダを選択',

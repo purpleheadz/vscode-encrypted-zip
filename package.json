@@ -3,6 +3,7 @@
   "displayName": "Encrypted ZIP Creator",
   "description": "ファイルやフォルダを選択して暗号化ZIPファイルを作成",
   "version": "0.2.0",
+  "publisher": "MakotoMine",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -15,8 +16,22 @@
     "vscode": "^1.60.0"
   },
   "categories": [
-    "Other"
+    "Other",
+    "Formatters",
+    "Keymaps"
   ],
+  "keywords": [
+    "zip",
+    "encryption",
+    "compress",
+    "archive",
+    "password",
+    "security"
+  ],
+  "galleryBanner": {
+    "color": "#C80000",
+    "theme": "dark"
+  },
   "activationEvents": [
     "onCommand:vscode-encrypted-zip.createEncryptedZip",
     "onCommand:vscode-encrypted-zip.createFromActiveFile",
@@ -86,14 +101,20 @@
       "explorer/context": [
         {
           "command": "vscode-encrypted-zip.createEncryptedZip",
-          "group": "navigation",
+          "group": "7_modification",
           "when": "explorerResourceIsFolder || explorerResourceIsRoot || explorerResourceSelected"
         }
       ],
       "editor/context": [
         {
           "command": "vscode-encrypted-zip.createFromActiveFile",
-          "group": "navigation"
+          "group": "1_modification"
+        }
+      ],
+      "explorer/context/resource/default": [
+        {
+          "command": "vscode-encrypted-zip.createEncryptedZip",
+          "group": "2_workspace"
         }
       ],
       "commandPalette": [
