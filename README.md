@@ -1,6 +1,7 @@
 # Encrypted ZIP Creator for VS Code
 
 Create encrypted ZIP files from VS Code with a single action. Automatically generates passwords and copies them to your clipboard for convenience.
+This tool reduces the hassle of the infamous PPAP workflow.
 
 ## Features
 
