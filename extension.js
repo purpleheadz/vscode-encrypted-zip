@@ -36,12 +36,18 @@ function activate(context) {
       // 複数選択されている場合 (selectedResources がある場合)
       if (selectedResources && selectedResources.length > 0) {
         console.log('複数選択処理');
-        filePaths = selectedResources.map(uri => uri.fsPath);
+        filePaths = selectedResources.map(uri => {
+          // URIオブジェクトとstring/pathの両方に対応
+          return uri.fsPath || uri.path || uri;
+        });
       }
       // 単一のリソースが選択された場合 (resource のみある場合)
       else if (resource) {
         console.log('単一選択処理');
-        filePaths = [resource.fsPath];
+        // URI形式、パス文字列、その他の形式に対応
+        const resourcePath = resource.fsPath || resource.path || resource;
+        console.log('Resource path:', resourcePath);
+        filePaths = [resourcePath];
       } 
       // 選択されたファイルがない場合、ファイル選択ダイアログを表示
       else {
@@ -54,7 +60,7 @@ function activate(context) {
         });
         
         if (uris && uris.length > 0) {
-          filePaths = uris.map(uri => uri.fsPath);
+          filePaths = uris.map(uri => uri.fsPath || uri.path || uri);
         }
       }
 

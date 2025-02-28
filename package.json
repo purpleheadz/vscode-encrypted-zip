@@ -101,8 +101,13 @@
       "explorer/context": [
         {
           "command": "vscode-encrypted-zip.createEncryptedZip",
-          "group": "7_modification",
-          "when": "explorerResourceIsFolder || explorerResourceIsRoot || explorerResourceSelected"
+          "group": "7_modification"
+        }
+      ],
+      "explorer/context/file": [
+        {
+          "command": "vscode-encrypted-zip.createEncryptedZip",
+          "group": "7_modification"
         }
       ],
       "editor/context": [
@@ -115,6 +120,18 @@
         {
           "command": "vscode-encrypted-zip.createEncryptedZip",
           "group": "2_workspace"
+        }
+      ],
+      "explorer/context/folder": [
+        {
+          "command": "vscode-encrypted-zip.createEncryptedZip",
+          "group": "2_workspace"
+        }
+      ],
+      "explorer/context/resource": [
+        {
+          "command": "vscode-encrypted-zip.createEncryptedZip",
+          "group": "navigation"
         }
       ],
       "commandPalette": [
