@@ -25,6 +25,7 @@ This tool reduces the hassle of the infamous PPAP workflow.
 
 ## Installation
 
+### From VSIX Package
 1. Clone the repository
 2. Run the following commands:
 ```
@@ -33,6 +34,10 @@ npm install
 npm run vsce:package
 ```
 3. Install the generated .vsix file via "Install Extension VSIX" option
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## Usage
 
