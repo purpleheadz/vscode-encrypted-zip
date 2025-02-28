@@ -4,7 +4,7 @@
 [![GitHub issues](https://img.shields.io/github/issues/purpleheadz/vscode-encrypted-zip)](https://github.com/purpleheadz/vscode-encrypted-zip/issues)
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/purpleheadz/vscode-encrypted-zip)](https://github.com/purpleheadz/vscode-encrypted-zip/releases)
 [![GitHub stars](https://img.shields.io/github/stars/purpleheadz/vscode-encrypted-zip)](https://github.com/purpleheadz/vscode-encrypted-zip/stargazers)
-[![Build Status](https://img.shields.io/github/actions/workflow/status/purpleheadz/vscode-encrypted-zip/cicd.yml?branch=main)](https://github.com/purpleheadz/vscode-encrypted-zip/actions)
+[![Build Status](https://github.com/purpleheadz/vscode-encrypted-zip/actions/workflows/cicd.yaml/badge.svg)](https://github.com/purpleheadz/vscode-encrypted-zip/actions)
 [![Architecture Documentation](https://img.shields.io/badge/docs-architecture-blue)](https://github.com/purpleheadz/vscode-encrypted-zip/blob/main/ARCHITECTURE.md)
 
 Create encrypted ZIP files from VS Code with a single action. Automatically generates passwords and copies them to your clipboard for convenience.
