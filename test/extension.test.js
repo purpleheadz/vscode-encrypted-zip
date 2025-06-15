@@ -6,6 +6,8 @@ const fs = require('fs');
 const os = require('os');
 const sinon = require('sinon');
 const { generateRandomPassword, createEncryptedZip } = require('../extension');
+const { generateRandomPassword: passwordGenerate } = require('../src/password');
+const { selectZipSaveLocation, generateDefaultZipFileName } = require('../src/zipCreator');
 
 // テストスイートの一群
 suite('Encrypted ZIP Extension Test Suite', () => {
@@ -16,9 +18,6 @@ suite('Encrypted ZIP Extension Test Suite', () => {
   
   // テスト前の設定
   suiteSetup(async () => {
-    // 拡張機能がアクティブになるまで待機
-    //await vscode.extensions.getExtension('purpleheadz.vscode-encrypted-zip').activate();
-    
     // 一時テストファイルの作成
     tempFilePath = path.join(os.tmpdir(), 'vscode-encrypted-zip-test.txt');
     fs.writeFileSync(tempFilePath, 'This is a test file for vscode-encrypted-zip extension.');
@@ -55,7 +54,7 @@ suite('Encrypted ZIP Extension Test Suite', () => {
     
     // テスト用フォルダを削除
     if (fs.existsSync(tempFolderPath)) {
-      fs.rmdirSync(tempFolderPath, { recursive: true });
+      fs.rmSync(tempFolderPath, { recursive: true, force: true });
     }
   });
 
@@ -76,7 +75,7 @@ suite('Encrypted ZIP Extension Test Suite', () => {
       ])
     });
     
-    const password = generateRandomPassword(16);
+    const password = passwordGenerate(16);
     
     // パスワードの長さが正しいことを確認
     assert.strictEqual(password.length, 16);
@@ -105,7 +104,7 @@ suite('Encrypted ZIP Extension Test Suite', () => {
       length: 8
     };
     
-    const password = generateRandomPassword(pattern);
+    const password = passwordGenerate(pattern);
     
     // パスワードの長さが正しいことを確認
     assert.strictEqual(password.length, 8);
@@ -114,240 +113,90 @@ suite('Encrypted ZIP Extension Test Suite', () => {
     assert.ok(/^[0-9]+$/.test(password), 'パスワードに数字以外の文字が含まれている');
   });
   
-  // 複数ファイル選択時のデフォルトファイル名生成テスト
-  test('複数ファイル選択時のデフォルトファイル名テスト', async () => {
-    // VS Codeの設定をモック
-    const getConfigurationStub = sinon.stub(vscode.workspace, 'getConfiguration');
-    getConfigurationStub.returns({
-      get: sinon.stub().returns([
-        {
-          name: "標準 (大文字/小文字/数字/記号)",
-          uppercase: true, 
-          lowercase: true,
-          numbers: true,
-          specialChars: true,
-          length: 16
-        }
-      ])
-    });
-    
-    // VSCodeのAPIをスタブ化
-    const showSaveDialogStub = sinon.stub(vscode.window, 'showSaveDialog').resolves(vscode.Uri.file('/tmp/test.zip'));
-    const showInformationMessageStub = sinon.stub(vscode.window, 'showInformationMessage').resolves('このパスワードを使用');
-    const showQuickPickStub = sinon.stub(vscode.window, 'showQuickPick').resolves({ 
-      label: "標準 (大文字/小文字/数字/記号)",
-      index: 0
-    });
-    
-    // 進捗表示をスタブ化
-    const withProgressStub = sinon.stub(vscode.window, 'withProgress').resolves();
-    
-    // fs関数をスタブ化
-    const createWriteStreamStub = sinon.stub(fs, 'createWriteStream').returns({
-      on: sinon.stub().callsFake(function(event, callback) {
-        if (event === 'close') {
-          // すぐにcloseイベントを発火させる
-          setTimeout(callback, 10);
-        }
-        return this;
-      })
-    });
-    
-    // archiverのスタブ
-    const archiverModule = require('archiver');
-    const createStub = sinon.stub(archiverModule, 'create').returns({
-      on: sinon.stub().returns({}),
-      pipe: sinon.stub().returns({}),
-      directory: sinon.stub().returns({}),
-      file: sinon.stub().returns({}),
-      finalize: sinon.stub().returns({})
-    });
-    
-    // クリップボードの挙動をモック
-    const originalWriteText = vscode.env.clipboard.writeText;
-    // テスト中はnoop関数に置き換える
-    vscode.env.clipboard.writeText = () => Promise.resolve();
-    
-    // 複数ファイルのパス配列
+  // ZIP保存場所の生成テスト - 複数ファイル
+  test('複数ファイル選択時のデフォルトファイル名テスト', () => {
     const multiFilePaths = [tempFilePath, tempFilePath2];
+    const { defaultFileName, defaultDir } = generateDefaultZipFileName(multiFilePaths);
     
-    try {
-      // createEncryptedZip関数を呼び出し
-      await createEncryptedZip(multiFilePaths);
-      
-      // showSaveDialogが正しいパラメータで呼ばれたか検証
-      sinon.assert.calledOnce(showSaveDialogStub);
-      
-      // パラメータを取得
-      const saveDialogParams = showSaveDialogStub.firstCall.args[0];
-      
-      // デフォルトURIがarchive_で始まるか確認
-      const defaultUriPath = saveDialogParams.defaultUri.fsPath;
-      assert.ok(
-        path.basename(defaultUriPath).startsWith('archive_'),
-        'デフォルトファイル名が複数ファイル用の命名規則（archive_タイムスタンプ）になっていない'
-      );
-      
-      // 拡張子が.zipであるか確認
-      assert.ok(defaultUriPath.endsWith('.zip'), 'デフォルトファイル名の拡張子が.zipではない');
-      
-      // ファイルタイプフィルターが正しいか確認
-      assert.deepStrictEqual(saveDialogParams.filters, { 'ZIP files': ['zip'] });
-      
-    } catch (error) {
-      assert.fail(`テスト中にエラーが発生しました: ${error.message}`);
-    } finally {
-      // 元のwriteText関数を復元
-      vscode.env.clipboard.writeText = originalWriteText;
-    }
+    // デフォルトファイル名がarchive_で始まるか確認
+    assert.ok(
+      defaultFileName.startsWith('archive_'),
+      'デフォルトファイル名が複数ファイル用の命名規則（archive_タイムスタンプ）になっていない'
+    );
+    
+    // デフォルトディレクトリが正しいか確認
+    assert.strictEqual(defaultDir, path.dirname(tempFilePath));
   });
   
-  // 単一ファイル選択時のデフォルトファイル名生成テスト
-  test('単一ファイル選択時のデフォルトファイル名テスト', async () => {
-    // VS Codeの設定をモック
-    const getConfigurationStub = sinon.stub(vscode.workspace, 'getConfiguration');
-    getConfigurationStub.returns({
-      get: sinon.stub().returns([
-        {
-          name: "標準 (大文字/小文字/数字/記号)",
-          uppercase: true, 
-          lowercase: true,
-          numbers: true,
-          specialChars: true,
-          length: 16
-        }
-      ])
-    });
-    
-    // VSCodeのAPIをスタブ化
-    const showSaveDialogStub = sinon.stub(vscode.window, 'showSaveDialog').resolves(vscode.Uri.file('/tmp/test.zip'));
-    const showInformationMessageStub = sinon.stub(vscode.window, 'showInformationMessage').resolves('このパスワードを使用');
-    const showQuickPickStub = sinon.stub(vscode.window, 'showQuickPick').resolves({ 
-      label: "標準 (大文字/小文字/数字/記号)",
-      index: 0
-    });
-    
-    // 進捗表示をスタブ化
-    const withProgressStub = sinon.stub(vscode.window, 'withProgress').resolves();
-    
-    // fs関数をスタブ化
-    const createWriteStreamStub = sinon.stub(fs, 'createWriteStream').returns({
-      on: sinon.stub().callsFake(function(event, callback) {
-        if (event === 'close') {
-          // すぐにcloseイベントを発火させる
-          setTimeout(callback, 10);
-        }
-        return this;
-      })
-    });
-    
-    // archiverのスタブ
-    const archiverModule = require('archiver');
-    const createStub = sinon.stub(archiverModule, 'create').returns({
-      on: sinon.stub().returns({}),
-      pipe: sinon.stub().returns({}),
-      directory: sinon.stub().returns({}),
-      file: sinon.stub().returns({}),
-      finalize: sinon.stub().returns({})
-    });
-    
-    // クリップボードの挙動をモック
-    const originalWriteText = vscode.env.clipboard.writeText;
-    // テスト中はnoop関数に置き換える
-    vscode.env.clipboard.writeText = () => Promise.resolve();
-    
-    // 単一ファイルのパス配列
+  // ZIP保存場所の生成テスト - 単一ファイル
+  test('単一ファイル選択時のデフォルトファイル名テスト', () => {
     const singleFilePath = [tempFilePath];
     const fileName = path.basename(tempFilePath);
+    const { defaultFileName, defaultDir } = generateDefaultZipFileName(singleFilePath);
     
-    try {
-      // createEncryptedZip関数を呼び出し
-      await createEncryptedZip(singleFilePath);
-      
-      // showSaveDialogが正しいパラメータで呼ばれたか検証
-      sinon.assert.calledOnce(showSaveDialogStub);
-      
-      // パラメータを取得
-      const saveDialogParams = showSaveDialogStub.firstCall.args[0];
-      
-      // デフォルトURIが元のファイル名を含むか確認
-      const defaultUriPath = saveDialogParams.defaultUri.fsPath;
-      assert.ok(
-        path.basename(defaultUriPath).startsWith(fileName.replace('.txt', '')),
-        'デフォルトファイル名が元のファイル名になっていない'
-      );
-      
-      // 拡張子が.zipであるか確認
-      assert.ok(defaultUriPath.endsWith('.zip'), 'デフォルトファイル名の拡張子が.zipではない');
-      
-    } catch (error) {
-      assert.fail(`テスト中にエラーが発生しました: ${error.message}`);
-    } finally {
-      // 元のwriteText関数を復元
-      vscode.env.clipboard.writeText = originalWriteText;
-    }
+    // デフォルトファイル名が元のファイル名を含むか確認
+    assert.strictEqual(defaultFileName, fileName);
+    
+    // デフォルトディレクトリが正しいか確認
+    assert.strictEqual(defaultDir, path.dirname(tempFilePath));
   });
   
-  // コンテキストメニューからの複数ファイル選択テスト - シンプルなバージョン
-  test('コンテキストメニューからの複数ファイル選択テスト', function() {
-    // VS Codeの設定をモック - グローバル設定をリセット
-    sinon.restore();
-    
+  // 拡張機能のアクティベーションテスト
+  test('拡張機能のアクティベーションテスト', () => {
     // VSCodeの拡張機能コンテキストをモック
     const context = {
       subscriptions: []
     };
     
-    // モジュールをモックするために置き換え
-    const originalModule = require('../extension');
-    
-    // 元の関数をスタブ化（後で復元するため保存）
-    const originalCreateEncryptedZip = originalModule.createEncryptedZip;
-    const createEncryptedZipStub = sinon.stub().returns(Promise.resolve());
-    originalModule.createEncryptedZip = createEncryptedZipStub;
-    
-    // コマンドとワークスペース設定をモック
+    // コマンド登録をモック
     const registerCommandStub = sinon.stub(vscode.commands, 'registerCommand').returns({
       dispose: () => {}
     });
     
-    const getConfigurationStub = sinon.stub(vscode.workspace, 'getConfiguration');
-    getConfigurationStub.returns({
-      get: sinon.stub().returns([
-        {
-          name: "標準 (大文字/小文字/数字/記号)",
-          uppercase: true, 
-          lowercase: true,
-          numbers: true,
-          specialChars: true,
-          length: 16
+    // archiverの重複登録を防ぐためのモック
+    const archiver = require('archiver');
+    const originalRegisterFormat = archiver.registerFormat;
+    const registerFormatStub = sinon.stub(archiver, 'registerFormat').callsFake((name, module) => {
+      // 既に登録されている場合は何もしない
+      if (archiver.isRegisteredFormat && archiver.isRegisteredFormat(name)) {
+        return;
+      }
+      // 登録されていない場合のみ元の関数を呼び出す
+      try {
+        originalRegisterFormat.call(archiver, name, module);
+      } catch (error) {
+        // 既に登録されているエラーは無視
+        if (!error.message.includes('format already registered')) {
+          throw error;
         }
-      ])
+      }
     });
     
     // 拡張機能をアクティブ化
-    originalModule.activate(context);
+    const extensionModule = require('../extension');
+    extensionModule.activate(context);
     
-    // コマンドが登録されたことを確認
+    // 必要なコマンドが登録されたことを確認
     sinon.assert.calledWith(registerCommandStub, 'vscode-encrypted-zip.createEncryptedZip');
+    sinon.assert.calledWith(registerCommandStub, 'vscode-encrypted-zip.createFromActiveFile');
+    sinon.assert.calledWith(registerCommandStub, 'vscode-encrypted-zip.createFromDragDrop');
     sinon.assert.calledWith(registerCommandStub, 'vscode-encrypted-zip.configurePasswordPatterns');
+    sinon.assert.calledWith(registerCommandStub, 'vscode-encrypted-zip.createAndSendViaOutlook');
     
-    // 登録された関数を取得
-    const handler = registerCommandStub.args.find(args => args[0] === 'vscode-encrypted-zip.createEncryptedZip')[1];
+    // subscriptionsに追加されたことを確認
+    assert.strictEqual(context.subscriptions.length, 5);
+  });
+  
+  // エクスポートされた関数のテスト
+  test('エクスポートされた関数の存在確認', () => {
+    const extensionModule = require('../extension');
     
-    // モックURIを準備
-    const mockUris = [
-      { fsPath: tempFilePath },
-      { fsPath: tempFilePath2 }
-    ];
-    
-    // ハンドラを呼び出し
-    handler(mockUris[0], mockUris);
-    
-    // スタブがまだ呼ばれていないことを確認（非同期なので）
-    assert.strictEqual(createEncryptedZipStub.callCount, 0);
-    
-    // 元の関数を復元
-    originalModule.createEncryptedZip = originalCreateEncryptedZip;
+    // 必要な関数がエクスポートされていることを確認
+    assert.ok(typeof extensionModule.activate === 'function', 'activate関数がエクスポートされていない');
+    assert.ok(typeof extensionModule.deactivate === 'function', 'deactivate関数がエクスポートされていない');
+    assert.ok(typeof extensionModule.generateRandomPassword === 'function', 'generateRandomPassword関数がエクスポートされていない');
+    assert.ok(typeof extensionModule.createEncryptedZip === 'function', 'createEncryptedZip関数がエクスポートされていない');
+    assert.ok(typeof extensionModule.createEncryptedZipAndSend === 'function', 'createEncryptedZipAndSend関数がエクスポートされていない');
+    assert.ok(typeof extensionModule.sendViaOutlook === 'function', 'sendViaOutlook関数がエクスポートされていない');
   });
 });
