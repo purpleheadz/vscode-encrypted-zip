@@ -5,7 +5,7 @@
 - `npm run vsce:publish` - Publish extension to marketplace
 
 ## Lint/Test Commands
-- `npm run lint` - Run ESLint on extension.js
+- `npm run lint` - Run ESLint on extension.js and all src modules
 - `npm run test` - Run all tests
 - `npx mocha ./test/extension.test.js -g "パスワード生成のテスト"` - Run a specific test by name
 

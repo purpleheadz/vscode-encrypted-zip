@@ -181,7 +181,7 @@
     ]
   },
   "scripts": {
-    "lint": "eslint ./extension.js",
+    "lint": "eslint ./extension.js ./src/**/*.js",
     "test": "node ./test/runTest.js",
     "vsce:package": "vsce package",
     "vsce:publish": "vsce publish"
