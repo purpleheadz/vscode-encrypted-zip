@@ -1,8 +1,8 @@
 {
   "name": "vscode-encrypted-zip",
   "displayName": "Encrypted ZIP Creator",
-  "description": "ファイルやフォルダを選択して暗号化ZIPファイルを作成",
-  "version": "0.2.0",
+  "description": "Create encrypted ZIP files with Outlook integration. Supports multiple password patterns and modular architecture for easy maintenance.",
+  "version": "0.3.0",
   "publisher": "MakotoMine",
   "license": "MIT",
   "repository": {
@@ -26,7 +26,10 @@
     "compress",
     "archive",
     "password",
-    "security"
+    "security",
+    "outlook",
+    "email",
+    "modular"
   ],
   "galleryBanner": {
     "color": "#C80000",
