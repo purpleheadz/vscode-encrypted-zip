@@ -35,7 +35,8 @@
   "activationEvents": [
     "onCommand:vscode-encrypted-zip.createEncryptedZip",
     "onCommand:vscode-encrypted-zip.createFromActiveFile",
-    "onCommand:vscode-encrypted-zip.createFromDragDrop"
+    "onCommand:vscode-encrypted-zip.createFromDragDrop",
+    "onCommand:vscode-encrypted-zip.createAndSendViaOutlook"
   ],
   "main": "./extension.js",
   "contributes": {
@@ -95,6 +96,10 @@
       {
         "command": "vscode-encrypted-zip.configurePasswordPatterns",
         "title": "パスワードパターンの設定"
+      },
+      {
+        "command": "vscode-encrypted-zip.createAndSendViaOutlook",
+        "title": "暗号化ZIPを作成してOutlookで送信"
       }
     ],
     "menus": {
@@ -102,11 +107,19 @@
         {
           "command": "vscode-encrypted-zip.createEncryptedZip",
           "group": "7_modification"
+        },
+        {
+          "command": "vscode-encrypted-zip.createAndSendViaOutlook",
+          "group": "7_modification"
         }
       ],
       "explorer/context/file": [
         {
           "command": "vscode-encrypted-zip.createEncryptedZip",
+          "group": "7_modification"
+        },
+        {
+          "command": "vscode-encrypted-zip.createAndSendViaOutlook",
           "group": "7_modification"
         }
       ],
@@ -120,11 +133,19 @@
         {
           "command": "vscode-encrypted-zip.createEncryptedZip",
           "group": "2_workspace"
+        },
+        {
+          "command": "vscode-encrypted-zip.createAndSendViaOutlook",
+          "group": "2_workspace"
         }
       ],
       "explorer/context/folder": [
         {
           "command": "vscode-encrypted-zip.createEncryptedZip",
+          "group": "2_workspace"
+        },
+        {
+          "command": "vscode-encrypted-zip.createAndSendViaOutlook",
           "group": "2_workspace"
         }
       ],
@@ -132,11 +153,18 @@
         {
           "command": "vscode-encrypted-zip.createEncryptedZip",
           "group": "navigation"
+        },
+        {
+          "command": "vscode-encrypted-zip.createAndSendViaOutlook",
+          "group": "navigation"
         }
       ],
       "commandPalette": [
         {
           "command": "vscode-encrypted-zip.createFromDragDrop"
+        },
+        {
+          "command": "vscode-encrypted-zip.createAndSendViaOutlook"
         }
       ]
     },

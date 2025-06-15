@@ -119,10 +119,53 @@ function activate(context) {
     }
   );
 
+  // ZIPファイル作成してOutlook送付コマンド
+  let createAndSendViaOutlook = vscode.commands.registerCommand(
+    'vscode-encrypted-zip.createAndSendViaOutlook',
+    async (resource, selectedResources) => {
+      // 既存のZIP作成コマンドと同じロジックでファイルパスを取得
+      if (Array.isArray(resource) && !selectedResources) {
+        selectedResources = resource;
+        resource = selectedResources[0];
+      }
+      
+      let filePaths = [];
+      
+      if (selectedResources && selectedResources.length > 0) {
+        filePaths = selectedResources.map(uri => {
+          return uri.fsPath || uri.path || uri;
+        });
+      } else if (resource) {
+        const resourcePath = resource.fsPath || resource.path || resource;
+        filePaths = [resourcePath];
+      } else {
+        const uris = await vscode.window.showOpenDialog({
+          canSelectMany: true,
+          openLabel: '暗号化するファイル/フォルダを選択',
+          canSelectFiles: true,
+          canSelectFolders: true
+        });
+        
+        if (uris && uris.length > 0) {
+          filePaths = uris.map(uri => uri.fsPath || uri.path || uri);
+        }
+      }
+
+      if (filePaths.length === 0) {
+        vscode.window.showInformationMessage('ファイルまたはフォルダを選択してください');
+        return;
+      }
+
+      // ZIP作成後に自動的にOutlookで送信
+      await createEncryptedZipAndSend(filePaths);
+    }
+  );
+
   context.subscriptions.push(createFromExplorer);
   context.subscriptions.push(createFromEditor);
   context.subscriptions.push(createFromDragAndDrop);
   context.subscriptions.push(configurePatterns);
+  context.subscriptions.push(createAndSendViaOutlook);
 }
 
 /**
@@ -225,6 +268,265 @@ function generateRandomPassword(patternOrLength = 16) {
  */
 async function copyToClipboard(text) {
   await vscode.env.clipboard.writeText(text);
+}
+
+/**
+ * OutlookでZIPファイルを送付する
+ * @param {string} zipFilePath ZIPファイルのパス
+ */
+async function sendViaOutlook(zipFilePath) {
+  const { exec } = require('child_process');
+  const os = require('os');
+  
+  const platform = os.platform();
+  const fileName = path.basename(zipFilePath);
+  
+  try {
+    if (platform === 'win32') {
+      // WindowsでOutlookを起動してファイルを添付
+      const command = `start outlook /m "&subject=暗号化ZIPファイル ${fileName}&attach=${zipFilePath}"`;
+      
+      exec(command, (error) => {
+        if (error) {
+          console.error('Outlook起動エラー:', error);
+          vscode.window.showErrorMessage(`Outlookの起動に失敗しました: ${error.message}`);
+          return;
+        }
+        vscode.window.showInformationMessage(`Outlookでメール作成画面を開きました (ファイル: ${fileName})`);
+      });
+    } else if (platform === 'darwin') {
+      // macOSでOutlookを起動
+      const command = `open -a "Microsoft Outlook" "${zipFilePath}"`;
+      
+      exec(command, (error) => {
+        if (error) {
+          console.error('Outlook起動エラー:', error);
+          vscode.window.showErrorMessage(`Outlookの起動に失敗しました: ${error.message}`);
+          return;
+        }
+        vscode.window.showInformationMessage(`Outlookでメール作成画面を開きました (ファイル: ${fileName})`);
+      });
+    } else {
+      // Linux等の場合は一般的なメールクライアントを試行
+      const command = `xdg-open "mailto:?subject=暗号化ZIPファイル ${fileName}&attach=${zipFilePath}"`;
+      
+      exec(command, (error) => {
+        if (error) {
+          console.error('メールクライアント起動エラー:', error);
+          vscode.window.showErrorMessage(`メールクライアントの起動に失敗しました: ${error.message}`);
+          return;
+        }
+        vscode.window.showInformationMessage(`メールクライアントでメール作成画面を開きました (ファイル: ${fileName})`);
+      });
+    }
+  } catch (error) {
+    vscode.window.showErrorMessage(`Outlook送付エラー: ${error.message}`);
+  }
+}
+
+/**
+ * 暗号化ZIPファイルを作成してOutlookで送信する
+ * @param {string[]} filePaths 圧縮するファイルパスの配列
+ */
+async function createEncryptedZipAndSend(filePaths) {
+  // 設定からパターンリストを取得
+  const config = vscode.workspace.getConfiguration('encryptedZip');
+  const passwordPatterns = config.get('passwordPatterns', []);
+  
+  // デフォルトのパターンがない場合は、標準のパターンを設定
+  if (passwordPatterns.length === 0) {
+    passwordPatterns.push({
+      name: "標準 (大文字/小文字/数字/記号)",
+      uppercase: true,
+      lowercase: true,
+      numbers: true,
+      specialChars: true,
+      length: 16
+    });
+  }
+  
+  // パスワードパターンの選択肢を表示
+  const patternQuickPickItems = passwordPatterns.map((pattern, index) => ({
+    label: pattern.name,
+    description: `${pattern.length}文字`,
+    detail: getPatternDescription(pattern),
+    index: index
+  }));
+  
+  // ヘルパー関数: パターンの説明を生成
+  function getPatternDescription(pattern) {
+    const parts = [];
+    if (pattern.uppercase) parts.push("大文字");
+    if (pattern.lowercase) parts.push("小文字");
+    if (pattern.numbers) parts.push("数字");
+    if (pattern.specialChars) parts.push("記号");
+    return parts.join(", ") + "を含む";
+  }
+  
+  // カスタムパスワード入力オプションを追加
+  patternQuickPickItems.push({
+    label: "自分でパスワードを入力",
+    description: "",
+    detail: "カスタムパスワードを手動で入力します",
+    index: -1
+  });
+  
+  const selectedPattern = await vscode.window.showQuickPick(patternQuickPickItems, {
+    placeHolder: 'パスワードのパターンを選択してください (Outlook送信用)',
+    ignoreFocusOut: true
+  });
+  
+  if (!selectedPattern) {
+    vscode.window.showInformationMessage('暗号化ZIPの作成をキャンセルしました');
+    return;
+  }
+  
+  let finalPassword;
+  
+  // カスタムパスワード入力を選んだ場合
+  if (selectedPattern.index === -1) {
+    // ユーザーがカスタムパスワードを入力する場合
+    const customPassword = await vscode.window.showInputBox({
+      prompt: 'ZIPファイルのパスワードを入力してください',
+      password: true,
+      validateInput: (value) => {
+        return value.length < 6 ? 'パスワードは最低6文字必要です' : null;
+      }
+    });
+    
+    if (!customPassword) {
+      vscode.window.showInformationMessage('パスワードが入力されなかったため、処理を中止しました');
+      return;
+    }
+    
+    finalPassword = customPassword;
+  } else {
+    // 選択されたパターンでパスワード生成
+    const pattern = passwordPatterns[selectedPattern.index];
+    const password = generateRandomPassword(pattern);
+    
+    // クリップボードにパスワードをコピー
+    await copyToClipboard(password);
+    
+    // ユーザーに確認のメッセージを表示
+    const options = ['このパスワードを使用', 'キャンセル'];
+    
+    const selection = await vscode.window.showInformationMessage(
+      `生成されたパスワード「${password}」がクリップボードにコピーされました。`,
+      ...options
+    );
+    
+    if (selection !== 'このパスワードを使用') {
+      // キャンセルまたは他の選択肢が選ばれた場合
+      vscode.window.showInformationMessage('暗号化ZIPの作成をキャンセルしました');
+      return;
+    }
+    
+    finalPassword = password;
+  }
+
+  // 保存先の選択
+  let defaultFileName;
+  let defaultDir;
+  
+  if (filePaths.length === 1) {
+    // 単一ファイル/フォルダの場合はその名前を使用
+    defaultFileName = path.basename(filePaths[0]);
+    defaultDir = path.dirname(filePaths[0]);
+  } else {
+    // 複数ファイル/フォルダの場合は共通の親ディレクトリ名 + 日時を使用
+    defaultDir = path.dirname(filePaths[0]);
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').substring(0, 19);
+    defaultFileName = `archive_${timestamp}`;
+  }
+  
+  const saveUri = await vscode.window.showSaveDialog({
+    defaultUri: vscode.Uri.file(path.join(defaultDir, `${defaultFileName}.zip`)),
+    filters: {
+      'ZIP files': ['zip']
+    }
+  });
+
+  if (!saveUri) {
+    vscode.window.showInformationMessage('保存先が選択されなかったため、処理を中止しました');
+    return;
+  }
+
+  try {
+    // 進捗表示
+    const progressOptions = {
+      location: vscode.ProgressLocation.Notification,
+      title: '暗号化ZIPファイルを作成中...',
+      cancellable: false
+    };
+
+    await vscode.window.withProgress(progressOptions, async (progress) => {
+      return new Promise((resolve, reject) => {
+        // 出力ストリームの作成
+        const output = fs.createWriteStream(saveUri.fsPath);
+        
+        // 暗号化ZIPアーカイバの作成
+        const archive = archiver.create('zip-encrypted', {
+          zlib: { level: 9 },
+          encryptionMethod: 'zip20',
+          password: finalPassword
+        });
+        
+        // 処理完了時の処理 - 自動的にOutlookで送信
+        output.on('close', async () => {
+          vscode.window.showInformationMessage(
+            `暗号化ZIPファイルを作成しました: ${path.basename(saveUri.fsPath)}\nパスワードはクリップボードにコピーされています\nOutlookを起動しています...`
+          );
+          
+          // 自動的にOutlookで送信
+          await sendViaOutlook(saveUri.fsPath);
+          
+          resolve();
+        });
+        
+        // エラー処理
+        archive.on('error', (err) => {
+          vscode.window.showErrorMessage(`エラーが発生しました: ${err.message}`);
+          reject(err);
+        });
+        
+        // 進捗報告
+        let lastProgressUpdate = 0;
+        archive.on('progress', (progressData) => {
+          const now = Date.now();
+          // 進捗表示の更新頻度を制限（200ms間隔）
+          if (now - lastProgressUpdate > 200) {
+            const percentage = progressData.entries.processed / progressData.entries.total * 100;
+            progress.report({ 
+              message: `${percentage.toFixed(1)}% 完了 (${progressData.entries.processed}/${progressData.entries.total})` 
+            });
+            lastProgressUpdate = now;
+          }
+        });
+        
+        // アーカイブをパイプ
+        archive.pipe(output);
+        
+        // ファイルを追加
+        for (const filePath of filePaths) {
+          const stat = fs.statSync(filePath);
+          
+          if (stat.isDirectory()) {
+            // フォルダの場合は再帰的に追加
+            archive.directory(filePath, path.basename(filePath));
+          } else {
+            // ファイルの場合はそのまま追加
+            archive.file(filePath, { name: path.basename(filePath) });
+          }
+        }
+        
+        // アーカイブを完了
+        archive.finalize();
+      });
+    });
+  } catch (error) {
+    vscode.window.showErrorMessage(`エラーが発生しました: ${error.message}`);
+  }
 }
 
 /**
@@ -376,10 +678,19 @@ async function createEncryptedZip(filePaths) {
         });
         
         // 処理完了時の処理
-        output.on('close', () => {
-          vscode.window.showInformationMessage(
-            `暗号化ZIPファイルを作成しました: ${path.basename(saveUri.fsPath)}\nパスワードはクリップボードにコピーされています`
+        output.on('close', async () => {
+          // ZIP作成完了後にOutlook送付オプションを表示
+          const options = ['Outlookで送信', '完了'];
+          
+          const selection = await vscode.window.showInformationMessage(
+            `暗号化ZIPファイルを作成しました: ${path.basename(saveUri.fsPath)}\nパスワードはクリップボードにコピーされています`,
+            ...options
           );
+          
+          if (selection === 'Outlookで送信') {
+            await sendViaOutlook(saveUri.fsPath);
+          }
+          
           resolve();
         });
         
@@ -435,5 +746,7 @@ module.exports = {
   activate,
   deactivate,
   generateRandomPassword,
-  createEncryptedZip
+  createEncryptedZip,
+  createEncryptedZipAndSend,
+  sendViaOutlook
 };
